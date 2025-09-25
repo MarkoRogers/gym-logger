@@ -16,7 +16,56 @@ export async function checkDbConnection() {
   }
 }
 
-// Workout Program functions
+export async function initializeTables() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("No DATABASE_URL");
+  }
+  
+  const initSql = neon(process.env.DATABASE_URL);
+  
+  try {
+    // Create workout_programs table
+    await initSql`
+      CREATE TABLE IF NOT EXISTS workout_programs (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    
+    // Create exercises table
+    await initSql`
+      CREATE TABLE IF NOT EXISTS exercises (
+        id SERIAL PRIMARY KEY,
+        program_id INTEGER REFERENCES workout_programs(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        sets INTEGER NOT NULL,
+        reps VARCHAR(50) NOT NULL,
+        rpe DECIMAL(3,1),
+        notes TEXT,
+        order_index INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    
+    // Create indexes
+    await initSql`
+      CREATE INDEX IF NOT EXISTS idx_exercises_program_id ON exercises(program_id)
+    `;
+    
+    await initSql`
+      CREATE INDEX IF NOT EXISTS idx_exercises_order ON exercises(program_id, order_index)
+    `;
+    
+    console.log("Tables initialized successfully");
+    return true;
+  } catch (error) {
+    console.error("Error initializing tables:", error);
+    throw error;
+  }
+}
 export async function getWorkoutPrograms() {
   const programs = await sql`
     SELECT id, name, description, created_at, updated_at 

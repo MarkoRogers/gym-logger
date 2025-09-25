@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addExercise } from '@/app/db';
+import { getWorkoutPrograms, createWorkoutProgram } from '@/app/db';
+
+export async function GET() {
+  try {
+    const programs = await getWorkoutPrograms();
+    return NextResponse.json(programs);
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch programs' }, { status: 500 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { programId, name, sets, reps, rpe, notes } = await request.json();
-    const exercise = await addExercise(programId, name, sets, reps, rpe, notes);
-    return NextResponse.json(exercise);
+    const { name, description } = await request.json();
+    const program = await createWorkoutProgram(name, description);
+    return NextResponse.json(program);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create exercise' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create program' }, { status: 500 });
   }
 }

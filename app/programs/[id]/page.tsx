@@ -310,4 +310,24 @@ export default function ProgramPage() {
                       </button>
                       <button
                         onClick={() => deleteExercise(exercise.id)}
-                        className="rounded bg-red-600 px-3
+                        className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {program.exercises.length === 0 && (
+          <div className="rounded-lg bg-white p-8 text-center shadow-md">
+            <p className="text-gray-600">No exercises yet. Add your first one!</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

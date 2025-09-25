@@ -1,31 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getWorkoutProgramWithExercises, updateWorkoutProgram, deleteWorkoutProgram } from '@/app/db';
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const program = await getWorkoutProgramWithExercises(parseInt(params.id));
-    if (!program) {
-      return NextResponse.json({ error: 'Program not found' }, { status: 404 });
-    }
-    return NextResponse.json(program);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch program' }, { status: 500 });
-  }
-}
+import { updateExercise, deleteExercise } from '@/app/db';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { name, description } = await request.json();
-    const program = await updateWorkoutProgram(parseInt(params.id), name, description);
-    return NextResponse.json(program);
+    const { name, sets, reps, rpe, notes } = await request.json();
+    const exercise = await updateExercise(parseInt(params.id), name, sets, reps, rpe, notes);
+    return NextResponse.json(exercise);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update program' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update exercise' }, { status: 500 });
   }
 }
 
@@ -34,9 +19,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await deleteWorkoutProgram(parseInt(params.id));
+    await deleteExercise(parseInt(params.id));
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete program' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete exercise' }, { status: 500 });
   }
 }

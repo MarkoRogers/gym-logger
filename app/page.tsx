@@ -1,110 +1,167 @@
-import Image from "next/image";
-import logo from "@/assets/logo.svg";
-import logoDark from "@/assets/logo-dark.svg";
-import Link from "next/link";
-import arrow from "@/assets/arrow.svg";
-import discord from "@/assets/discord.svg";
-import docs from "@/assets/docs.svg";
-import { checkDbConnection } from "./db";
+'use client';
 
-export default async function Home() {
-  const result = await checkDbConnection();
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+
+interface WorkoutProgram {
+  id: number;
+  name: string;
+  description: string;
+  created_at: string;
+}
+
+export default function Home() {
+  const [programs, setPrograms] = useState<WorkoutProgram[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [newProgram, setNewProgram] = useState({ name: '', description: '' });
+
+  useEffect(() => {
+    fetchPrograms();
+  }, []);
+
+  const fetchPrograms = async () => {
+    try {
+      const response = await fetch('/api/programs');
+      const data = await response.json();
+      setPrograms(data);
+    } catch (error) {
+      console.error('Error fetching programs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createProgram = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProgram.name) return;
+
+    try {
+      const response = await fetch('/api/programs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProgram),
+      });
+
+      if (response.ok) {
+        setNewProgram({ name: '', description: '' });
+        setShowForm(false);
+        fetchPrograms();
+      }
+    } catch (error) {
+      console.error('Error creating program:', error);
+    }
+  };
+
+  const deleteProgram = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this program?')) return;
+
+    try {
+      const response = await fetch(`/api/programs/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        fetchPrograms();
+      }
+    } catch (error) {
+      console.error('Error deleting program:', error);
+    }
+  };
+
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+  }
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 md:max-w-lg md:px-0 lg:max-w-xl">
-        <main className="flex flex-1 flex-col justify-center">
-          <div className="mb-6 md:mb-7">
-            <Image
-              className="lg:h-7 lg:w-auto dark:hidden"
-              src={logo}
-              alt="Neon logo"
-              width={88}
-              height={24}
-              priority
-            />
-            <Image
-              className="hidden lg:h-7 lg:w-auto dark:block"
-              src={logoDark}
-              alt="Neon logo"
-              width={88}
-              height={24}
-              priority
-            />
-          </div>
-          <h1 className="text-3xl font-semibold leading-none tracking-tighter md:text-4xl md:leading-none lg:text-5xl lg:leading-none">
-            Vercel with Neon Postgres
-          </h1>
-          <p className="mt-3.5 max-w-lg text-base leading-snug tracking-tight text-[#61646B] md:text-lg md:leading-snug lg:text-xl lg:leading-snug dark:text-[#94979E]">
-            A minimal template for building full-stack React applications using
-            Next.js, Vercel, and Neon.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-5 md:mt-9 lg:mt-10">
-            <Link
-              className="rounded-full bg-[#00E599] px-5 py-2.5 font-semibold tracking-tight text-[#0C0D0D] transition-colors duration-200 hover:bg-[#00E5BF] lg:px-7 lg:py-3"
-              href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fneondatabase-labs%2Fvercel-marketplace-neon%2Ftree%2Fmain&project-name=my-vercel-neon-app&repository-name=my-vercel-neon-app&products=[{%22type%22:%22integration%22,%22integrationSlug%22:%22neon%22,%22productSlug%22:%22neon%22,%22protocol%22:%22storage%22}]"
-              target="_blank"
-            >
-              Deploy to Vercel
-            </Link>
-            <Link
-              className="group flex items-center gap-2 leading-none tracking-tight"
-              href="https://github.com/neondatabase-labs/vercel-marketplace-neon"
-              target="_blank"
-            >
-              View on GitHub
-              <Image
-                className="transition-transform duration-200 group-hover:translate-x-1 dark:invert"
-                src={arrow}
-                alt="arrow"
-                width={16}
-                height={10}
-                priority
-              />
-            </Link>
-          </div>
-        </main>
-        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E4E5E7] py-5 sm:gap-2 sm:gap-6 md:pb-12 md:pt-10 dark:border-[#303236]">
-          <ul className="flex items-center gap-4 sm:gap-6">
-            {[
-              {
-                text: "Docs",
-                href: "https://neon.tech/docs/",
-                icon: docs,
-              },
-              {
-                text: "Discord",
-                href: "https://discord.com/invite/92vNTzKDGp",
-                icon: discord,
-              },
-            ].map((link) => (
-              <Link
-                className="flex items-center gap-2 opacity-70 transition-opacity duration-200 hover:opacity-100"
-                key={link.text}
-                href={link.href}
-                target="_blank"
-              >
-                <Image
-                  className="dark:invert"
-                  src={link.icon}
-                  alt={link.text}
-                  width={16}
-                  height={16}
-                  priority
-                />
-                <span className="text-sm tracking-tight">{link.text}</span>
-              </Link>
-            ))}
-          </ul>
-          <span
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
-              result === "Database connected"
-                ? "border-[#00E599]/20 bg-[#00E599]/10 text-[#1a8c66] dark:bg-[#00E599]/10 dark:text-[#00E599]"
-                : "border-red-500/20 bg-red-500/10 text-red-500 dark:text-red-500"
-            }`}
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="mx-auto max-w-4xl px-4">
+        <div className="mb-8 flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-gray-900">Workout Programs</h1>
+          <button
+            onClick={() => setShowForm(true)}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
-            {result}
-          </span>
-        </footer>
+            New Program
+          </button>
+        </div>
+
+        {showForm && (
+          <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
+            <h2 className="mb-4 text-xl font-semibold">Create New Program</h2>
+            <form onSubmit={createProgram}>
+              <div className="mb-4">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Program Name
+                </label>
+                <input
+                  type="text"
+                  value={newProgram.name}
+                  onChange={(e) => setNewProgram({ ...newProgram, name: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Description (optional)
+                </label>
+                <textarea
+                  value={newProgram.description}
+                  onChange={(e) => setNewProgram({ ...newProgram, description: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900"
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+                >
+                  Create Program
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="rounded-lg bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {programs.map((program) => (
+            <div key={program.id} className="rounded-lg bg-white p-6 shadow-md">
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">{program.name}</h3>
+              {program.description && (
+                <p className="mb-4 text-gray-600">{program.description}</p>
+              )}
+              <div className="flex gap-2">
+                <Link
+                  href={`/programs/${program.id}`}
+                  className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+                >
+                  View
+                </Link>
+                <button
+                  onClick={() => deleteProgram(program.id)}
+                  className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {programs.length === 0 && (
+          <div className="rounded-lg bg-white p-8 text-center shadow-md">
+            <p className="text-gray-600">No workout programs yet. Create your first one!</p>
+          </div>
+        )}
       </div>
     </div>
   );
